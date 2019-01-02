@@ -3,6 +3,8 @@ package cidr
 import (
 	"fmt"
 	"math/bits"
+	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -18,6 +20,10 @@ type CidrBlock struct {
 func NewCidr(cidr string) (*CidrBlock, error) {
 	cidrBlock := CidrBlock{}
 	ipAddressStr, subnetMaskStr, err := parseCmmandLineInput(cidr)
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		os.Exit(1)
+	}
 	ipAddress := convertIpv4StrInto32bitInteger(ipAddressStr)
 	subnetMask, _ := subnetMask32bitInteger(subnetMaskStr)
 	cidrBlock.ipAddress = ipAddress
@@ -47,6 +53,10 @@ func (cb *CidrBlock) Print() int {
 }
 
 func parseCmmandLineInput(cidr string) (string, string, error) {
+	re, _ := regexp.MatchString(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[1-9]{1,2}$`, cidr)
+	if !re {
+		return "", "", fmt.Errorf("Invalid input -> %s\n", cidr)
+	}
 	ret := strings.Split(cidr, "/")
 	return ret[0], ret[1], nil
 }
