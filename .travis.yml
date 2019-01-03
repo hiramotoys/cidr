@@ -9,4 +9,4 @@ env:
 
 install: go get -t -v github.com/hiramotoys/cidr
 
-script: go test -v
+script: go test -v ./...
