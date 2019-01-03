@@ -54,7 +54,7 @@ func (cb *CidrBlock) Print() int {
 }
 
 func parseCmmandLineInput(cidr string) (string, string, error) {
-	re, _ := regexp.MatchString(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[1-9]{1,2}$`, cidr)
+	re, _ := regexp.MatchString(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[1-9][0-9]$`, cidr)
 	if !re {
 		return "", "", fmt.Errorf("Invalid input format -> %s", cidr)
 	}
