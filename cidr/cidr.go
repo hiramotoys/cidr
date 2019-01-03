@@ -132,8 +132,8 @@ func convertIpv4ArrayInto32bitInteger(ipv4 [4]uint8) uint32 {
 func convert32bitIntegerIntoIpv4Array(itg uint32) [4]uint8 {
 	var result [4]uint8
 	for i := 0; i < 4; i++ {
-		shift_num := uint32((4 - i - 1) * 8)
-		result[i] = uint8(itg & uint32(255<<shift_num) >> shift_num)
+		shiftNum := uint32((4 - i - 1) * 8)
+		result[i] = uint8(itg & uint32(255<<shiftNum) >> shiftNum)
 	}
 	return result
 }
