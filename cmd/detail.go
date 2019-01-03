@@ -16,7 +16,9 @@ package cmd
 
 import (
 	"github.com/hiramotoys/cidr/cidr"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 // detailCmd represents the detail command
@@ -30,7 +32,11 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cidrBlock, _ := cidr.NewCidr(args[0])
+		cidrBlock, err := cidr.NewCidr(args[0])
+		if err != nil {
+			logrus.Errorf("%s", err.Error())
+			os.Exit(1)
+		}
 		cidrBlock.Print()
 	},
 }

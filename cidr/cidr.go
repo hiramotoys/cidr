@@ -2,9 +2,7 @@ package cidr
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"math/bits"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,8 +20,7 @@ func NewCidr(cidr string) (*CidrBlock, error) {
 	cidrBlock := CidrBlock{}
 	ipAddressStr, subnetMaskStr, err := parseCmmandLineInput(cidr)
 	if err != nil {
-		logrus.Errorf("%s\n", err.Error())
-		os.Exit(1)
+		return nil, err
 	}
 	ipAddress := convertIpv4StrInto32bitInteger(ipAddressStr)
 	subnetMask := subnetMask32bitInteger(subnetMaskStr)
@@ -32,7 +29,7 @@ func NewCidr(cidr string) (*CidrBlock, error) {
 	cidrBlock.setNetworkAddress()
 	cidrBlock.setBroadcastAddress()
 	cidrBlock.ipAddressRange = getIpAdressRange(cidrBlock.networkAddress, cidrBlock.broadcastAddress)
-	return &cidrBlock, err
+	return &cidrBlock, nil
 }
 
 func (cb *CidrBlock) Print() int {

@@ -25,6 +25,24 @@ func TestNewCidrCase003(t *testing.T) {
 	checkCidr("Case003", cb.GetCidr(), "10.0.0.0/8", t)
 }
 
+func TestNewCidrCase101(t *testing.T) {
+	var input string
+	input = "192.168.32.0/a"
+	_, err := NewCidr(input)
+	if err == nil {
+		t.Errorf("Case101 case failed. Invalid input format -> %s", input)
+	}
+}
+
+func TestNewCidrCase102(t *testing.T) {
+	var input string
+	input = "1920.168.32.0/10"
+	_, err := NewCidr(input)
+	if err == nil {
+		t.Errorf("Case101 case failed. Invalid input format -> %s", input)
+	}
+}
+
 func checkNetworkAddress(caseID, actualAddress, okAddress string, t *testing.T) {
 	if actualAddress != okAddress {
 		t.Errorf("%s case failed. Network address incorrectly. %s is correctly, but actual address is %s .\n", caseID, okAddress, actualAddress)
