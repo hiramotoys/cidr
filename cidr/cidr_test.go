@@ -13,9 +13,9 @@ func TestNewCidrCase001(t *testing.T) {
 
 func TestNewCidrCase002(t *testing.T) {
 	cb, _ := NewCidr("192.168.32.0/30")
-	checkNetworkAddress("Case001", cb.GetNetworkAddress(), "192.168.32.0", t)
-	checkBroadcastAddress("Case001", cb.GetBroadcastAddress(), "192.168.32.3", t)
-	checkCidr("Case001", cb.GetCidr(), "192.168.32.0/30", t)
+	checkNetworkAddress("Case002", cb.GetNetworkAddress(), "192.168.32.0", t)
+	checkBroadcastAddress("Case002", cb.GetBroadcastAddress(), "192.168.32.3", t)
+	checkCidr("Case002", cb.GetCidr(), "192.168.32.0/30", t)
 }
 
 func TestNewCidrCase003(t *testing.T) {
