@@ -26,7 +26,7 @@ func NewCidr(cidr string) (*CidrBlock, error) {
 		os.Exit(1)
 	}
 	ipAddress := convertIpv4StrInto32bitInteger(ipAddressStr)
-	subnetMask, _ := subnetMask32bitInteger(subnetMaskStr)
+	subnetMask := subnetMask32bitInteger(subnetMaskStr)
 	cidrBlock.ipAddress = ipAddress
 	cidrBlock.subnetMask = subnetMask
 	cidrBlock.setNetworkAddress()
@@ -56,10 +56,14 @@ func (cb *CidrBlock) Print() int {
 func parseCmmandLineInput(cidr string) (string, string, error) {
 	re, _ := regexp.MatchString(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[1-9]{1,2}$`, cidr)
 	if !re {
-		return "", "", fmt.Errorf("Invalid input format -> %s\n", cidr)
+		return "", "", fmt.Errorf("Invalid input format -> %s", cidr)
 	}
 	ret := strings.Split(cidr, "/")
-	return ret[0], ret[1], nil
+	v, err := strconv.Atoi(ret[1])
+	if err == nil && (v < 1 || v > 32) {
+		err = fmt.Errorf("Invalid cidr value -> /%d", v)
+	}
+	return ret[0], ret[1], err
 }
 
 func (cb *CidrBlock) GetCidr() string {
@@ -107,18 +111,18 @@ func getIpAdressRange(networkAddress, broadcastAddress uint32) [][4]uint8 {
 }
 
 func convertIpv4StrInto32bitInteger(ipv4Str string) uint32 {
-	ipv4Array, _ := convertIpv4StrIntoIpv4Array(ipv4Str)
+	ipv4Array := convertIpv4StrIntoIpv4Array(ipv4Str)
 	return convertIpv4ArrayInto32bitInteger(ipv4Array)
 }
 
-func convertIpv4StrIntoIpv4Array(ipv4 string) ([4]uint8, error) {
+func convertIpv4StrIntoIpv4Array(ipv4 string) [4]uint8 {
 	ret := strings.Split(ipv4, ".")
 	var ipv4Array [4]uint8
 	for i := 0; i < 4; i++ {
 		v, _ := strconv.ParseUint(ret[i], 10, 8)
 		ipv4Array[i] = uint8(v)
 	}
-	return ipv4Array, nil
+	return ipv4Array
 }
 
 func convertIpv4ArrayInto32bitInteger(ipv4 [4]uint8) uint32 {
@@ -139,7 +143,7 @@ func convert32bitIntegerIntoIpv4Array(itg uint32) [4]uint8 {
 	return result
 }
 
-func subnetMask32bitInteger(subnetMask string) (uint32, error) {
+func subnetMask32bitInteger(subnetMask string) uint32 {
 	var ipv4Array [4]uint8
 	for i := 0; i < 4; i++ {
 		b := ""
@@ -154,5 +158,5 @@ func subnetMask32bitInteger(subnetMask string) (uint32, error) {
 		r, _ := strconv.ParseUint(b, 2, 8)
 		ipv4Array[i] = uint8(r)
 	}
-	return convertIpv4ArrayInto32bitInteger(ipv4Array), nil
+	return convertIpv4ArrayInto32bitInteger(ipv4Array)
 }
