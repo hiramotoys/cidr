@@ -2,76 +2,127 @@ package cidr
 
 import (
 	"fmt"
+	"math/bits"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
 type CidrBlock struct {
-	IpAddressBase10        [4]uint8
-	SubnetMaskBase10       [4]uint8
-	NetworkAddressBase10   [4]uint8
-	IpAdressRangeBase10    [][4]uint8
-	BroadcastAddressBase10 [4]uint8
+	ipAddress        uint32
+	subnetMask       uint32
+	networkAddress   uint32
+	broadcastAddress uint32
+	ipAddressRange   [][4]uint8
 }
 
 func NewCidr(cidr string) (*CidrBlock, error) {
-	ipAddress, subnetMask, err := parseCidrStr(cidr)
-	ipAdressBase10, _ := convertIntoIpv4Array(ipAddress)
-	subnetMaskBase10, _ := convertIntoIpv4SubnetMaskArray(subnetMask)
-	networkAddressBase10, _ := networkAddress(ipAdressBase10, subnetMaskBase10)
-	broadcastAddressBase10, _ := broadcastAddress(ipAdressBase10, subnetMaskBase10)
-	ipAddressRangeBase10 := ipAdressRange(networkAddressBase10, broadcastAddressBase10)
-	cidrBlock := CidrBlock{ipAdressBase10, subnetMaskBase10, networkAddressBase10, ipAddressRangeBase10, broadcastAddressBase10}
-	return &cidrBlock, err
+	cidrBlock := CidrBlock{}
+	ipAddressStr, subnetMaskStr, err := parseCmmandLineInput(cidr)
+	if err != nil {
+		return nil, err
+	}
+	ipAddress := convertIpv4StrInto32bitInteger(ipAddressStr)
+	subnetMask := subnetMask32bitInteger(subnetMaskStr)
+	cidrBlock.ipAddress = ipAddress
+	cidrBlock.subnetMask = subnetMask
+	cidrBlock.setNetworkAddress()
+	cidrBlock.setBroadcastAddress()
+	cidrBlock.ipAddressRange = getIpAdressRange(cidrBlock.networkAddress, cidrBlock.broadcastAddress)
+	return &cidrBlock, nil
 }
 
 func (cb *CidrBlock) Print() int {
-	fmt.Printf("IP address: %d.%d.%d.%d\n", cb.IpAddressBase10[0], cb.IpAddressBase10[1], cb.IpAddressBase10[2], cb.IpAddressBase10[3])
-	fmt.Printf("Subnet mask: %d.%d.%d.%d\n", cb.SubnetMaskBase10[0], cb.SubnetMaskBase10[1], cb.SubnetMaskBase10[2], cb.SubnetMaskBase10[3])
-	fmt.Printf("Network address: %d.%d.%d.%d\n", cb.NetworkAddressBase10[0], cb.NetworkAddressBase10[1], cb.NetworkAddressBase10[2], cb.NetworkAddressBase10[3])
-	fmt.Printf("Broadcast address: %d.%d.%d.%d\n", cb.BroadcastAddressBase10[0], cb.BroadcastAddressBase10[1], cb.BroadcastAddressBase10[2], cb.BroadcastAddressBase10[3])
+	fmt.Printf("CIDR: %s\n", cb.GetCidr())
+	ipAddressArray := convert32bitIntegerIntoIpv4Array(cb.ipAddress)
+	fmt.Printf("IP address: %d.%d.%d.%d\n", ipAddressArray[0], ipAddressArray[1], ipAddressArray[2], ipAddressArray[3])
+	subnetMaskArray := convert32bitIntegerIntoIpv4Array(cb.subnetMask)
+	fmt.Printf("Subnet mask: %d.%d.%d.%d\n", subnetMaskArray[0], subnetMaskArray[1], subnetMaskArray[2], subnetMaskArray[3])
+	networkAddressArray := convert32bitIntegerIntoIpv4Array(cb.networkAddress)
+	fmt.Printf("Network address: %d.%d.%d.%d\n", networkAddressArray[0], networkAddressArray[1], networkAddressArray[2], networkAddressArray[3])
+	broadcastAddressArray := convert32bitIntegerIntoIpv4Array(cb.broadcastAddress)
+	fmt.Printf("Broadcast address: %d.%d.%d.%d\n", broadcastAddressArray[0], broadcastAddressArray[1], broadcastAddressArray[2], broadcastAddressArray[3])
 	fmt.Printf("IP address range:")
-	for i := 0; i < len(cb.IpAdressRangeBase10); i++ {
-		fmt.Printf(" %d.%d.%d.%d", cb.IpAdressRangeBase10[i][0], cb.IpAdressRangeBase10[i][1], cb.IpAdressRangeBase10[i][2], cb.IpAdressRangeBase10[i][3])
+	for i := 0; i < len(cb.ipAddressRange); i++ {
+		fmt.Printf(" %d.%d.%d.%d", cb.ipAddressRange[i][0], cb.ipAddressRange[i][1], cb.ipAddressRange[i][2], cb.ipAddressRange[i][3])
 	}
 	fmt.Printf("\n")
 	return 0
 }
 
-func parseCidrStr(cidr string) (string, string, error) {
+func parseCmmandLineInput(cidr string) (string, string, error) {
+	re, _ := regexp.MatchString(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]{1,2}$`, cidr)
+	if !re {
+		return "", "", fmt.Errorf("Invalid input format -> %s", cidr)
+	}
 	ret := strings.Split(cidr, "/")
-	return ret[0], ret[1], nil
-}
-
-func networkAddress(ipv4 [4]uint8, ipv4SubnetMask [4]uint8) ([4]uint8, error) {
-	var na [4]uint8
-	for i := 0; i < 4; i++ {
-		na[i] = ipv4[i] & ipv4SubnetMask[i]
+	v, err := strconv.Atoi(ret[1])
+	if err == nil && (v < 1 || v > 32) {
+		err = fmt.Errorf("Invalid cidr value -> /%d", v)
 	}
-	return na, nil
+	return ret[0], ret[1], err
 }
 
-func broadcastAddress(ipv4 [4]uint8, ipv4SubnetMask [4]uint8) ([4]uint8, error) {
-	var na [4]uint8
-	for i := 0; i < 4; i++ {
-		notIpv4SubnetMask := ^ipv4SubnetMask[i]
-		na[i] = ipv4[i] | notIpv4SubnetMask
+func (cb *CidrBlock) GetCidr() string {
+	b := IpV4Str(cb.networkAddress)
+	b += "/" + strconv.Itoa(bits.OnesCount32(cb.subnetMask))
+	return b
+}
+
+func (cb *CidrBlock) GetNetworkAddress() string {
+	return IpV4Str(cb.networkAddress)
+}
+
+func (cb *CidrBlock) GetBroadcastAddress() string {
+	return IpV4Str(cb.broadcastAddress)
+}
+
+func IpV4Str(ipaddress uint32) string {
+	ipV4Array := convert32bitIntegerIntoIpv4Array(ipaddress)
+	b := ""
+	length := 4
+	for i := 0; i < length; i++ {
+		b += strconv.Itoa(int(ipV4Array[i]))
+		if i < length-1 {
+			b += "."
+		}
 	}
-	return na, nil
+	return b
 }
 
-func ipAdressRange(naIpv4, baIpv4 [4]uint8) [][4]uint8 {
-	na := convertIpv4ArrayInto32BitInteger(naIpv4)
-	ba := convertIpv4ArrayInto32BitInteger(baIpv4)
-	num := ba - na + 1
+func (cb *CidrBlock) setNetworkAddress() {
+	cb.networkAddress = cb.ipAddress & cb.subnetMask
+}
+
+func (cb *CidrBlock) setBroadcastAddress() {
+	cb.broadcastAddress = cb.ipAddress | (^cb.subnetMask)
+}
+
+func getIpAdressRange(networkAddress, broadcastAddress uint32) [][4]uint8 {
+	num := broadcastAddress - networkAddress + 1
 	result := make([][4]uint8, num)
 	for i := 0; i < int(num); i++ {
-		result[i] = convert32BitIntegerIntoIpv4Array(na + uint32(i))
+		result[i] = convert32bitIntegerIntoIpv4Array(networkAddress + uint32(i))
 	}
 	return result
 }
 
-func convertIpv4ArrayInto32BitInteger(ipv4 [4]uint8) uint32 {
+func convertIpv4StrInto32bitInteger(ipv4Str string) uint32 {
+	ipv4Array := convertIpv4StrIntoIpv4Array(ipv4Str)
+	return convertIpv4ArrayInto32bitInteger(ipv4Array)
+}
+
+func convertIpv4StrIntoIpv4Array(ipv4 string) [4]uint8 {
+	ret := strings.Split(ipv4, ".")
+	var ipv4Array [4]uint8
+	for i := 0; i < 4; i++ {
+		v, _ := strconv.ParseUint(ret[i], 10, 8)
+		ipv4Array[i] = uint8(v)
+	}
+	return ipv4Array
+}
+
+func convertIpv4ArrayInto32bitInteger(ipv4 [4]uint8) uint32 {
 	var result uint32
 	result = 0
 	for i := 0; i < 4; i++ {
@@ -80,26 +131,16 @@ func convertIpv4ArrayInto32BitInteger(ipv4 [4]uint8) uint32 {
 	return result
 }
 
-func convert32BitIntegerIntoIpv4Array(itg uint32) [4]uint8 {
+func convert32bitIntegerIntoIpv4Array(itg uint32) [4]uint8 {
 	var result [4]uint8
 	for i := 0; i < 4; i++ {
-		shift_num := uint32((4 - i - 1) * 8)
-		result[i] = uint8(itg & uint32(255<<shift_num) >> shift_num)
+		shiftNum := uint32((4 - i - 1) * 8)
+		result[i] = uint8(itg & uint32(255<<shiftNum) >> shiftNum)
 	}
 	return result
 }
 
-func convertIntoIpv4Array(ipv4 string) ([4]uint8, error) {
-	ret := strings.Split(ipv4, ".")
-	var ipv4Array [4]uint8
-	for i := 0; i < 4; i++ {
-		v, _ := strconv.ParseUint(ret[i], 10, 8)
-		ipv4Array[i] = uint8(v)
-	}
-	return ipv4Array, nil
-}
-
-func convertIntoIpv4SubnetMaskArray(subnetMask string) ([4]uint8, error) {
+func subnetMask32bitInteger(subnetMask string) uint32 {
 	var ipv4Array [4]uint8
 	for i := 0; i < 4; i++ {
 		b := ""
@@ -114,5 +155,5 @@ func convertIntoIpv4SubnetMaskArray(subnetMask string) ([4]uint8, error) {
 		r, _ := strconv.ParseUint(b, 2, 8)
 		ipv4Array[i] = uint8(r)
 	}
-	return ipv4Array, nil
+	return convertIpv4ArrayInto32bitInteger(ipv4Array)
 }

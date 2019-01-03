@@ -1,0 +1,12 @@
+language: go
+
+go:
+  - 1.11.x
+  - master
+
+env:
+  - GO111MODULE=on
+
+install: go get -t -v github.com/hiramotoys/cidr
+
+script: go test -v ./...
