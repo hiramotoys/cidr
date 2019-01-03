@@ -1,5 +1,7 @@
 # cidr
 
+[![Build Status](https://travis-ci.org/hiramotoys/cidr.svg?branch=master)](https://travis-ci.org/hiramotoys/cidr)
+
 This package provides a command line interface to get a network cidr information.
 
 The cidr package needs golang.
