@@ -4,16 +4,20 @@ import (
 	"testing"
 )
 
-func TestNewCidr(t *testing.T) {
+func TestNewCidrCase001(t *testing.T) {
 	cb, _ := NewCidr("192.168.32.0/28")
-	var networkaddress string
-	var broadcastaddress string
-	networkaddress = cb.GetNetworkAddress()
-	broadcastaddress = cb.GetBroadcastAddress()
-	if networkaddress != "192.168.32.0" {
-		t.Errorf("Failed network address unmatched: %s\n", networkaddress)
+	checkNetworkAddress("Case001", cb.GetNetworkAddress(), "192.168.32.0", t)
+	checkBroadcastAddress("Case001", cb.GetBroadcastAddress(), "192.168.32.15", t)
+}
+
+func checkNetworkAddress(caseID, actualAddress, okAddress string, t *testing.T) {
+	if actualAddress != okAddress {
+		t.Errorf("%s case failed. Network address incorrectly. %s is correctly, but actual address is %s .\n", caseID, okAddress, actualAddress)
 	}
-	if broadcastaddress != "192.168.32.15" {
-		t.Errorf("Failed broadcast address unmatched: %s\n", broadcastaddress)
+}
+
+func checkBroadcastAddress(caseID, actualAddress, okAddress string, t *testing.T) {
+	if actualAddress != okAddress {
+		t.Errorf("%s case failed. Broadcast address incorrectly. %s is correctly, but actual address is %s .\n", caseID, okAddress, actualAddress)
 	}
 }
